@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shopping List</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 720px; margin: 40px auto; padding: 0 16px; }
+    .row { display: flex; gap: 8px; margin: 12px 0; }
+    input, button { padding: 10px; font-size: 16px; }
+    input { flex: 1; }
+    li { display: flex; justify-content: space-between; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin: 8px 0; }
+    .muted { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Shopping List</h1>
+  <p class="muted">UI served by Flask. Data stored in MySQL.</p>
+
+  <div class="row">
+    <input id="name" placeholder="Item name (e.g., Milk)" />
+    <input id="qty" type="number" min="1" value="1" style="max-width:120px" />
+    <button onclick="addItem()">Add</button>
+  </div>
+
+  <ul id="list"></ul>
+
+  <script>
+    async function loadItems() {
+      const res = await fetch('/items');
+      const data = await res.json();
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      for (const item of data.items) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>
+            <b>${item.name}</b> (x${item.quantity})
+            ${item.purchased ? '— purchased' : ''}
+          </span>
+          <span>
+            <button onclick="togglePurchased(${item.id}, ${item.purchased})">
+              ${item.purchased ? 'Unmark' : 'Mark'}
+            </button>
+            <button onclick="deleteItem(${item.id})">Delete</button>
+          </span>
+        `;
+        list.appendChild(li);
+      }
+    }
+
+    async function addItem() {
+      const name = document.getElementById('name').value.trim();
+      const quantity = parseInt(document.getElementById('qty').value || '1', 10);
+      if (!name) return alert('Enter an item name');
+
+      await fetch('/items', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, quantity})
+      });
+
+      document.getElementById('name').value = '';
+      document.getElementById('qty').value = '1';
+      loadItems();
+    }
+
+    async function togglePurchased(id, purchased) {
+      await fetch(`/items/${id}`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({purchased: !purchased})
+      });
+      loadItems();
+    }
+
+    async function deleteItem(id) {
+      await fetch(`/items/${id}`, { method: 'DELETE' });
+      loadItems();
+    }
+
+    loadItems();
+  </script>
+</body>
+</html>

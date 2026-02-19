@@ -1,6 +1,6 @@
 import os
 import time
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import MySQLdb
 
 app = Flask(__name__)
@@ -47,6 +47,9 @@ def init_db_with_retries(max_retries=30, delay_seconds=2):
             time.sleep(delay_seconds)
     raise last_err
 
+@app.get("/")
+def index():
+    return render_template("index.html")
 
 @app.get("/health")
 def health():
